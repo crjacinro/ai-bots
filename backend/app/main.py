@@ -1,15 +1,15 @@
 from fastapi import FastAPI
-# from beanie import init_beanie
-# from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from motor.motor_asyncio import AsyncIOMotorClient
 import openai
-# from pydantic import BaseModel
+from pydantic import BaseModel
 from typing import List
 import os
 
 app = FastAPI()
 
 # MongoDB model
-class Item():
+class Item(BaseModel):
     name: str
     description: str
 
