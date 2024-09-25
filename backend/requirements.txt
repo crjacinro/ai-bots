@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pydantic
+beanie[motor]
+motor
+openai
