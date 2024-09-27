@@ -1,16 +1,22 @@
 from openai import OpenAI
 from pydantic import BaseModel
+from enum import Enum
 import os
 
 MODEL_TEMPERATURE = 0.25
 MODEL_LLM = "gpt-3.5-turbo"
 ENABLE_LLM_API_MOCK = True
 
-# Set OpenAI API key
 openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+class QueryRoleType(str, Enum):
+    system = "system"
+    user = "user"
+    assistant = "assistant"
+    function = "function"
+
 class QueryPrompt(BaseModel):
-    role: str
+    role: QueryRoleType
     content: str
 
 def get_completion(query_prompt: QueryPrompt, model=MODEL_LLM):
@@ -19,9 +25,14 @@ def get_completion(query_prompt: QueryPrompt, model=MODEL_LLM):
     if ENABLE_LLM_API_MOCK:
         return "This is a mock chat GPT!"
 
-    response = openai.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=MODEL_TEMPERATURE
-    )
-    return response.choices[0].message.content
+    try:
+        response = openai.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=MODEL_TEMPERATURE
+        )
+        return response.choices[0].message.content
+    except:
+        raise ApiBotException(code=422, message="Unable to create resource")
+
+

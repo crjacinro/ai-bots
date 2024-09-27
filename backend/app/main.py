@@ -6,36 +6,44 @@ from pydantic import BaseModel, Field, validator
 from typing import List
 from beanie import Document, Indexed, init_beanie
 
-from errors import ApiBotException
+from errors import ApiBotException, handle_error
 from llm import QueryPrompt
 from llm import get_completion
 import os
 
 app = FastAPI()
 
-# MongoDB model
-class Item(Document):
+class Interaction(Document):
+    user_message: str
+    llm_message: str
+
+class ConversationModel(Document):
     name: str
-    description: str
+    params: Interaction
+
 
 # Initialize MongoDB
 @app.on_event("startup")
 async def startup_event():
     client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
-    await init_beanie(database=client.mydatabase, document_models=[Item])
+    await init_beanie(database=client.mydatabase, document_models=[ConversationModel])
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/items/")
-async def create_item(item: Item):
-    await item.insert()
-    return {"message": "Item created successfully"}
 
-@app.get("/items/", response_model=List[Item])
-async def get_items():
-    print("sdf")
+class ConversationData(BaseModel):
+    name: str
+    user_message: str
+
+@app.post("/conversations/")
+async def create_conversations(conversation: ConversationData):
+    # await item.insert()
+    return {"message": "Conversation created successfully"}
+
+@app.get("/conversations/", response_model=List[ConversationModel])
+async def get_conversations():
     items = await Item.find_all().to_list()
     return items
 
@@ -45,11 +53,11 @@ async def get_items():
 @app.post("/queries/{id}", status_code=status.HTTP_201_CREATED)
 async def queries(id: str, query_prompt: QueryPrompt):
     try:
-        # raise ApiBotException(code=422, message="Unable to create resource")
         response = get_completion(query_prompt)
-
-        return {"response": response.strip()}
-
+        return {
+            "id": id,
+            "response": response.strip()
+        }
     except Exception as exc:
         handle_error(exc)
 
@@ -67,8 +75,4 @@ async def general_exception_handler(request: Request, exc: ApiBotException):
         status_code=exc.code,
         content={"code":exc.code, "message": exc.message},
     )
-def handle_error(exc):
-    if exc.code is None:
-        raise ApiBotException(code=500, message="Internal server error")
-    else:
-        raise ApiBotException(code=exc.code, message=exc.message)
+
