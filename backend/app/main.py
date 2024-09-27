@@ -13,7 +13,7 @@ import os
 
 app = FastAPI()
 
-class Interaction(Document):
+class Interaction(BaseModel):
     user_message: str
     llm_message: str
 
@@ -32,21 +32,15 @@ async def startup_event():
 async def root():
     return {"message": "Hello World"}
 
-
-class ConversationData(BaseModel):
-    name: str
-    user_message: str
-
-@app.post("/conversations/")
-async def create_conversations(conversation: ConversationData):
-    # await item.insert()
-    return {"message": "Conversation created successfully"}
+@app.post("/conversations/", status_code=status.HTTP_201_CREATED)
+async def create_conversations(conversation: ConversationModel):
+    result = await conversation.insert()
+    return {"id": str(result.id)}
 
 @app.get("/conversations/", response_model=List[ConversationModel])
 async def get_conversations():
-    items = await Item.find_all().to_list()
+    items = await ConversationModel.find_all().project(ConversationModel.id).to_list()
     return items
-
 
 
 
@@ -65,9 +59,10 @@ async def queries(id: str, query_prompt: QueryPrompt):
 # Error handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
+    bad_request_code = status.HTTP_400_BAD_REQUEST
     return JSONResponse(
-        status_code=400,
-        content={"code": 400, "message": "Invalid parameters provided"},
+        status_code=bad_request_code,
+        content={"code": bad_request_code, "message": "Invalid parameters provided"},
     )
 @app.exception_handler(ApiBotException)
 async def general_exception_handler(request: Request, exc: ApiBotException):
