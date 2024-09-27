@@ -1,26 +1,27 @@
 from fastapi import FastAPI
-from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
-import openai
+from openai import OpenAI
 from pydantic import BaseModel
 from typing import List
+from beanie import Document, Indexed, init_beanie
 import os
 
 app = FastAPI()
 
 # MongoDB model
-class Item(BaseModel):
+class Item(Document):
     name: str
     description: str
 
-# Initialize MongoDB
-# @app.on_event("startup")
-# async def startup_event():
-#     client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
-#     await init_beanie(database=client.mydatabase, document_models=[Item])
+#Initialize MongoDB
+@app.on_event("startup")
+async def startup_event():
+    client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
+    await init_beanie(database=client.mydatabase, document_models=[Item])
 
 # Set OpenAI API key
-openai.api_key = os.environ["OPENAI_API_KEY"]
+openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
 
 @app.get("/")
 async def root():
@@ -36,11 +37,24 @@ async def get_items():
     items = await Item.find_all().to_list()
     return items
 
-@app.post("/generate_description/")
-async def generate_description(prompt: str):
-    response = openai.Completion.create(
-        engine="text-davinci-002",
-        prompt=prompt,
-        max_tokens=100
+
+
+
+
+class QueryPrompt(BaseModel):
+    role: str = None
+    content: str = None
+
+@app.post("/queries/{id}")
+async def queries(id: str, query_prompt: QueryPrompt):
+    response = get_completion(query_prompt)
+    return {"response": response.strip()}
+
+def get_completion(query_prompt: QueryPrompt, model="gpt-3.5-turbo"):
+    messages = [{"role": query_prompt.role, "content": query_prompt.content}]
+    response = openai.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.25
     )
-    return {"generated_description": response.choices[0].text.strip()}
+    return response.choices[0].message.content
