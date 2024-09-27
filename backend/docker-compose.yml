@@ -7,9 +7,12 @@ services:
       - "8000:8000"
     depends_on:
       - mongodb
+    volumes:
+      - ./app:/app
+    working_dir: /app
     environment:
       - MONGODB_URL=mongodb://mongodb:27017/mydatabase
-      - OPENAI_API_KEY=your_openai_api_key_here
+      - OPENAI_API_KEY=
 
   mongodb:
     image: mongo:latest

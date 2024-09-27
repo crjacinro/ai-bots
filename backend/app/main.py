@@ -34,10 +34,9 @@ async def create_item(item: Item):
 
 @app.get("/items/", response_model=List[Item])
 async def get_items():
+    print("sdf")
     items = await Item.find_all().to_list()
     return items
-
-
 
 
 
