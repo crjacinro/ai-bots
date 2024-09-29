@@ -6,9 +6,8 @@ from pydantic import BaseModel, Field, validator
 from typing import List
 from beanie import Document, Indexed, init_beanie
 
-from errors import ApiBotException, handle_error
-from llm import get_completion
-from llm import QueryRoleType, QueryPrompt
+from errors import ApiBotException, handle_error, raise_not_found_error
+from llm import QueryRoleType, QueryPrompt, get_completion
 import os
 
 app = FastAPI()
@@ -40,12 +39,10 @@ async def startup_event():
     client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
     await init_beanie(database=client.mydatabase, document_models=[ConversationModel])
 
-
 @app.post("/conversations/", status_code=status.HTTP_201_CREATED)
 async def create_conversations(conversation: ConversationModel):
     result = await conversation.insert()
     return {"id": str(result.id)}
-
 
 @app.get("/conversations/", response_model=List[ConversationListingModel])
 async def get_conversations():
@@ -53,10 +50,29 @@ async def get_conversations():
     filtered: List[ConversationShortModel] = [{"name": c.name, "id": str(c.id)} for c in conversations]
     return filtered
 
+@app.get("/conversations/{id}", response_model=ConversationModel)
+async def get_conversations(id: str):
+    result = await ConversationModel.get(id)
+    if result is None:
+        raise_not_found_error()
+
+    return result
+
+@app.delete("/conversations/{id}",  status_code=status.HTTP_204_NO_CONTENT)
+async def get_conversations(id: str):
+    result = await ConversationModel.get(id)
+    if result is None:
+        raise_not_found_error()
+
+    await result.delete()
 
 @app.post("/queries/{id}", status_code=status.HTTP_201_CREATED)
 async def queries(id: str, query_prompt: QueryPrompt):
     try:
+        conversation_id = await ConversationModel.get(id)
+        if conversation_id is None:
+            raise_not_found_error()
+
         response = get_completion(query_prompt)
         return {
             "id": id,
