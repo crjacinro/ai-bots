@@ -42,6 +42,17 @@ async def get_conversations(id: str):
 
     return result
 
+@app.put("/conversations/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def get_conversations(id: str, conversation: ConversationModel):
+    result = await ConversationModel.get(id)
+    if result is None:
+        raise_not_found_error()
+
+    result.name = conversation.name
+    result.llm_params = conversation.llm_params
+
+    await result.replace()
+
 
 @app.delete("/conversations/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def get_conversations(id: str):
