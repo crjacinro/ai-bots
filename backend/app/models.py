@@ -1,11 +1,21 @@
-from llm import QueryRoleType
 from pydantic import BaseModel
 from beanie import Document
 from typing import List
+from enum import Enum
 
-class Messages(BaseModel):
+
+class QueryRoleType(str, Enum):
+    system = "system"
+    user = "user"
+    assistant = "assistant"
+    function = "function"
+
+class QueryPrompt(BaseModel):
     role: QueryRoleType
-    user_message: str
+    content: str
+
+class Message(BaseModel):
+    user_message: QueryPrompt
     llm_message: str
 
 
@@ -17,7 +27,7 @@ class LlmParams(BaseModel):
 class ConversationModel(Document):
     name: str
     llm_params: LlmParams
-    messages: List[Messages] = []
+    messages: List[Message] = []
 
 
 class ConversationListingModel(BaseModel):

@@ -1,6 +1,5 @@
 from openai import OpenAI
-from pydantic import BaseModel
-from enum import Enum
+from models import QueryPrompt
 import os
 
 DEFAULT_MODEL_TEMPERATURE = 0.25
@@ -8,19 +7,6 @@ DEFAULT_MODEL_LLM = "gpt-3.5-turbo"
 ENABLE_LLM_API_MOCK = False
 
 openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-
-class QueryRoleType(str, Enum):
-    system = "system"
-    user = "user"
-    assistant = "assistant"
-    function = "function"
-
-
-class QueryPrompt(BaseModel):
-    role: QueryRoleType
-    content: str
-
 
 def get_completion(query_prompt: QueryPrompt, model: str, temperature: float):
     messages = [{"role": query_prompt.role, "content": query_prompt.content}]

@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field, validator
 from typing import List
 from beanie import Document, Indexed, init_beanie
 
-from models import ConversationModel, ConversationListingModel
+from models import ConversationModel, ConversationListingModel, QueryPrompt, QueryRoleType, Message
 from errors import ApiBotException, handle_error, raise_not_found_error
-from llm import QueryRoleType, QueryPrompt, get_completion
+from llm import get_completion
 import os
 
 app = FastAPI()
@@ -78,12 +78,17 @@ async def get_conversations(id: str):
 @app.post("/queries/{id}", status_code=status.HTTP_201_CREATED)
 async def queries(id: str, query_prompt: QueryPrompt):
     try:
-        conversation_result = await ConversationModel.get(id)
+        conversation_result: ConversationModel = await ConversationModel.get(id)
         if conversation_result is None:
             raise_not_found_error()
 
         llm_params = conversation_result.llm_params
         response = get_completion(query_prompt, model=llm_params.model_name, temperature=llm_params.temperature)
+
+        message = Message(user_message = query_prompt,llm_message= response)
+        conversation_result.messages.append(message)
+
+        await conversation_result.replace()
         return {
             "id": id,
             "response": response.strip()
