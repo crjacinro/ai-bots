@@ -19,7 +19,7 @@ class QueryPrompt(BaseModel):
     role: QueryRoleType
     content: str
 
-def get_completion(query_prompt: QueryPrompt, model=MODEL_LLM):
+def get_completion(query_prompt: QueryPrompt, model: str, temperature: float):
     messages = [{"role": query_prompt.role, "content": query_prompt.content}]
 
     if ENABLE_LLM_API_MOCK:
@@ -29,7 +29,7 @@ def get_completion(query_prompt: QueryPrompt, model=MODEL_LLM):
         response = openai.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=MODEL_TEMPERATURE
+            temperature=temperature
         )
         return response.choices[0].message.content
     except:

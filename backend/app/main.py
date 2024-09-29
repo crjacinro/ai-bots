@@ -7,20 +7,32 @@ from typing import List
 from beanie import Document, Indexed, init_beanie
 
 from errors import ApiBotException, handle_error
-from llm import QueryPrompt
 from llm import get_completion
+from llm import QueryRoleType, QueryPrompt
 import os
 
 app = FastAPI()
 
-class Interaction(BaseModel):
+
+class Messages(BaseModel):
+    role: QueryRoleType
     user_message: str
     llm_message: str
 
+
+class LlmParams(BaseModel):
+    model_name: str
+    temperature: float
+
+
 class ConversationModel(Document):
     name: str
-    params: Interaction
+    llm_params: LlmParams
+    messages: List[Messages] = []
 
+class ConversationListingModel(BaseModel):
+    id: str
+    name: str
 
 # Initialize MongoDB
 @app.on_event("startup")
@@ -28,20 +40,18 @@ async def startup_event():
     client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
     await init_beanie(database=client.mydatabase, document_models=[ConversationModel])
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
 
 @app.post("/conversations/", status_code=status.HTTP_201_CREATED)
 async def create_conversations(conversation: ConversationModel):
     result = await conversation.insert()
     return {"id": str(result.id)}
 
-@app.get("/conversations/", response_model=List[ConversationModel])
-async def get_conversations():
-    items = await ConversationModel.find_all().project(ConversationModel.id).to_list()
-    return items
 
+@app.get("/conversations/", response_model=List[ConversationListingModel])
+async def get_conversations():
+    conversations = await ConversationModel.find_all().to_list()
+    filtered: List[ConversationShortModel] = [{"name": c.name, "id": str(c.id)} for c in conversations]
+    return filtered
 
 
 @app.post("/queries/{id}", status_code=status.HTTP_201_CREATED)
@@ -64,10 +74,11 @@ async def validation_exception_handler(request, exc):
         status_code=bad_request_code,
         content={"code": bad_request_code, "message": "Invalid parameters provided"},
     )
+
+
 @app.exception_handler(ApiBotException)
 async def general_exception_handler(request: Request, exc: ApiBotException):
     return JSONResponse(
         status_code=exc.code,
-        content={"code":exc.code, "message": exc.message},
+        content={"code": exc.code, "message": exc.message},
     )
-
