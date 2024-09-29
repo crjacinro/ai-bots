@@ -10,13 +10,15 @@ class QueryRoleType(str, Enum):
     assistant = "assistant"
     function = "function"
 
+
 class QueryPrompt(BaseModel):
     role: QueryRoleType
     content: str
 
-class Message(BaseModel):
-    user_message: QueryPrompt
-    llm_message: str
+
+class QueryResponse(BaseModel):
+    id: str
+    response: str
 
 
 class LlmParams(BaseModel):
@@ -27,7 +29,7 @@ class LlmParams(BaseModel):
 class ConversationModel(Document):
     name: str
     llm_params: LlmParams
-    messages: List[Message] = []
+    messages: List[QueryPrompt] = []
 
 
 class ConversationListingModel(BaseModel):

@@ -6,12 +6,13 @@ from pydantic import BaseModel, Field, validator
 from typing import List
 from beanie import Document, Indexed, init_beanie
 
-from models import ConversationModel, ConversationListingModel, QueryPrompt, QueryRoleType, Message
+from models import ConversationModel, ConversationListingModel, QueryPrompt, QueryRoleType, QueryResponse
 from errors import ApiBotException, handle_error, raise_not_found_error
 from llm import get_completion
 import os
 
 app = FastAPI()
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -21,6 +22,7 @@ async def startup_event():
     except Exception as exc:
         handle_error(exc)
 
+
 @app.post("/conversations/", status_code=status.HTTP_201_CREATED)
 async def create_conversations(conversation: ConversationModel):
     try:
@@ -28,6 +30,7 @@ async def create_conversations(conversation: ConversationModel):
         return {"id": str(result.id)}
     except Exception as exc:
         handle_error(exc)
+
 
 @app.get("/conversations/", response_model=List[ConversationListingModel])
 async def get_conversations():
@@ -37,6 +40,7 @@ async def get_conversations():
         return filtered
     except Exception as exc:
         handle_error(exc)
+
 
 @app.get("/conversations/{id}", response_model=ConversationModel)
 async def get_conversations(id: str):
@@ -48,6 +52,7 @@ async def get_conversations(id: str):
         return result
     except Exception as exc:
         handle_error(exc)
+
 
 @app.put("/conversations/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def get_conversations(id: str, conversation: ConversationModel):
@@ -63,6 +68,7 @@ async def get_conversations(id: str, conversation: ConversationModel):
     except Exception as exc:
         handle_error(exc)
 
+
 @app.delete("/conversations/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def get_conversations(id: str):
     try:
@@ -75,7 +81,7 @@ async def get_conversations(id: str):
         handle_error(exc)
 
 
-@app.post("/queries/{id}", status_code=status.HTTP_201_CREATED)
+@app.post("/queries/{id}", status_code=status.HTTP_201_CREATED, response_model=QueryResponse)
 async def queries(id: str, query_prompt: QueryPrompt):
     try:
         conversation_result: ConversationModel = await ConversationModel.get(id)
@@ -83,16 +89,17 @@ async def queries(id: str, query_prompt: QueryPrompt):
             raise_not_found_error()
 
         llm_params = conversation_result.llm_params
-        response = get_completion(query_prompt, model=llm_params.model_name, temperature=llm_params.temperature)
 
-        message = Message(user_message = query_prompt,llm_message= response)
-        conversation_result.messages.append(message)
+        response = get_completion(query_prompt=query_prompt, context=conversation_result.messages, model=llm_params.model_name,
+                                  temperature=llm_params.temperature)
+
+        conversation_result.messages.append(query_prompt)
+        conversation_result.messages.append(QueryPrompt(role=QueryRoleType.assistant, content=response))
 
         await conversation_result.replace()
-        return {
-            "id": id,
-            "response": response.strip()
-        }
+
+        return QueryResponse(id=id, response=response.strip())
+
     except Exception as exc:
         handle_error(exc)
 
