@@ -3,9 +3,9 @@ from pydantic import BaseModel
 from enum import Enum
 import os
 
-MODEL_TEMPERATURE = 0.25
-MODEL_LLM = "gpt-3.5-turbo"
-ENABLE_LLM_API_MOCK = True
+DEFAULT_MODEL_TEMPERATURE = 0.25
+DEFAULT_MODEL_LLM = "gpt-3.5-turbo"
+ENABLE_LLM_API_MOCK = False
 
 openai = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 

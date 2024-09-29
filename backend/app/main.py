@@ -13,64 +13,77 @@ import os
 
 app = FastAPI()
 
-
-# Initialize MongoDB
 @app.on_event("startup")
 async def startup_event():
-    client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
-    await init_beanie(database=client.mydatabase, document_models=[ConversationModel])
-
+    try:
+        client = AsyncIOMotorClient(os.environ["MONGODB_URL"])
+        await init_beanie(database=client.mydatabase, document_models=[ConversationModel])
+    except Exception as exc:
+        handle_error(exc)
 
 @app.post("/conversations/", status_code=status.HTTP_201_CREATED)
 async def create_conversations(conversation: ConversationModel):
-    result = await conversation.insert()
-    return {"id": str(result.id)}
-
+    try:
+        result = await conversation.insert()
+        return {"id": str(result.id)}
+    except Exception as exc:
+        handle_error(exc)
 
 @app.get("/conversations/", response_model=List[ConversationListingModel])
 async def get_conversations():
-    conversations = await ConversationModel.find_all().to_list()
-    filtered: List[ConversationShortModel] = [{"name": c.name, "id": str(c.id)} for c in conversations]
-    return filtered
-
+    try:
+        conversations = await ConversationModel.find_all().to_list()
+        filtered: List[ConversationShortModel] = [{"name": c.name, "id": str(c.id)} for c in conversations]
+        return filtered
+    except Exception as exc:
+        handle_error(exc)
 
 @app.get("/conversations/{id}", response_model=ConversationModel)
 async def get_conversations(id: str):
-    result = await ConversationModel.get(id)
-    if result is None:
-        raise_not_found_error()
+    try:
+        result = await ConversationModel.get(id)
+        if result is None:
+            raise_not_found_error()
 
-    return result
+        return result
+    except Exception as exc:
+        handle_error(exc)
 
 @app.put("/conversations/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def get_conversations(id: str, conversation: ConversationModel):
-    result = await ConversationModel.get(id)
-    if result is None:
-        raise_not_found_error()
+    try:
+        result = await ConversationModel.get(id)
+        if result is None:
+            raise_not_found_error()
 
-    result.name = conversation.name
-    result.llm_params = conversation.llm_params
+        result.name = conversation.name
+        result.llm_params = conversation.llm_params
 
-    await result.replace()
-
+        await result.replace()
+    except Exception as exc:
+        handle_error(exc)
 
 @app.delete("/conversations/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def get_conversations(id: str):
-    result = await ConversationModel.get(id)
-    if result is None:
-        raise_not_found_error()
+    try:
+        result = await ConversationModel.get(id)
+        if result is None:
+            raise_not_found_error()
 
-    await result.delete()
+        await result.delete()
+    except Exception as exc:
+        handle_error(exc)
 
 
 @app.post("/queries/{id}", status_code=status.HTTP_201_CREATED)
 async def queries(id: str, query_prompt: QueryPrompt):
     try:
-        conversation_id = await ConversationModel.get(id)
-        if conversation_id is None:
+        conversation_result = await ConversationModel.get(id)
+        if conversation_result is None:
             raise_not_found_error()
 
-        response = get_completion(query_prompt)
+        llm_params = conversation_result.llm_params
+        response = get_completion(query_prompt, model=llm_params.model_name, temperature=llm_params.temperature)
         return {
             "id": id,
             "response": response.strip()
