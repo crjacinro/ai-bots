@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {Container, TextInput, Button, Box, Text} from '@mantine/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -8,8 +8,34 @@ type Message = {
   sender: 'user' | 'bot';
 };
 
-const fakeApiCall = async (message: string) => {
-    const response = await fetch('http://localhost:8000/queries/66f96a1e5febabc559dbf602', {
+
+
+export default function ChatWindow() {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const queryClient = useQueryClient();
+  const [conversationId, setConversationId] = useState('')
+
+  useEffect(() => {
+    fetch('http://localhost:8000/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: "New Conversation",
+        llm_params: {
+            model_name: "gpt-3.5-turbo",
+            temperature: 0.25
+        }
+      }),
+    })
+    .then(r => r.json())
+    .then(r => {
+      setConversationId(r.id)
+   }).catch(error => console.error('Error', error))
+  }, []);
+
+  const sendMessageToServer = async (message: string) => {
+    const response = await fetch('http://localhost:8000/queries/'+conversationId, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -23,46 +49,31 @@ const fakeApiCall = async (message: string) => {
     return response.json();
 };
 
-
-export default function Welcome() {
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const queryClient = useQueryClient();
-
   const sendMessage = (message: string) => {
     const userMessage = { id: Date.now(), content: message, sender: 'user' };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Simulate bot response
     setTimeout(() => {
       const botMessage = { id: Date.now(), content: `Bot response to "${message}"`, sender: 'bot' };
       setMessages((prev) => [...prev, botMessage]);
     }, 1000);
   };
 
-    // useMutation to simulate sending the user's message to the fake API
-    const mutation = useMutation({
-        mutationFn: fakeApiCall,
-        onSuccess: (data, variables) => {
-            const botMessage = { id: Date.now(), content: data.response, sender: 'bot' };
-            setMessages((prev) => [...prev, botMessage]); // Append the bot response to the messages
-        },
-    });
+  const mutation = useMutation({
+      mutationFn: sendMessageToServer,
+      onSuccess: (data, variables) => {
+          const botMessage = { id: Date.now(), content: data.response, sender: 'bot' };
+          setMessages((prev) => [...prev, botMessage]);
+      },
+  });
 
-    const handleSend = () => {
-        if (input.trim()) {
-            const userMessage = { id: Date.now(), content: input, sender: 'user' };
-            setMessages((prev) => [...prev, userMessage]); // Add user's message to the chat
-            mutation.mutate(input); // Call the fake API with user's input
-            setInput(''); // Clear input field
-        }
-    };
-
-  const handleSendOld = () => {
-    if (input.trim()) {
-      sendMessage(input);
-      setInput('');
-    }
+  const handleSend = () => {
+      if (input.trim()) {
+          const userMessage = { id: Date.now(), content: input, sender: 'user' };
+          setMessages((prev) => [...prev, userMessage]);
+          mutation.mutate(input);
+          setInput('');
+      }
   };
 
   return (

@@ -1,19 +1,15 @@
-# Mantine Next.js template
+# LLM Chat Frontend
 
-This is a template for [Next.js](https://nextjs.org/) pages router + [Mantine](https://mantine.dev/).
-If you want to use app router instead, see [next-app-template](https://github.com/mantinedev/next-app-template).
+This project is using [Next.js](https://nextjs.org/) pages router with [Mantine](https://mantine.dev/) library.
 
-## Features
+## Running using Docker
 
-This template comes with the following features:
+`docker build -t frontend .`
+`docker run -p 3000:3000 frontend`
 
-- [PostCSS](https://postcss.org/) with [mantine-postcss-preset](https://mantine.dev/styles/postcss-preset)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Storybook](https://storybook.js.org/)
-- [Jest](https://jestjs.io/) setup with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro)
-- ESLint setup with [eslint-config-mantine](https://github.com/mantinedev/eslint-config-mantine)
+Alternatively, you can use the `run.sh` script runner.
 
-## npm scripts
+## Scripts
 
 ### Build and dev scripts
 

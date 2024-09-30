@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import Welcome from '@/components/Welcome/Welcome';
+import ChatWindow from '@/components/ChatWindow/ChatWindow';
 
 export default function HomePage() {
   return (
@@ -7,7 +7,7 @@ export default function HomePage() {
         <Title order={1} align="center" mt="xl" mb="xl">
             Ai Bots Chat
         </Title>
-      <Welcome />
+      <ChatWindow />
     </>
   );
 }
