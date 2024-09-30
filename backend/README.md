@@ -35,6 +35,15 @@ This command will:
 
 It will watch the changes in the source directory and automatically rebuilds the app once changes are detected.
 
+## Running Locally using venv
+
+Though it is recommended to run the project using Docker, it can also be run using `venv` locally.
+
+- `pip install virtualenv` - install virtualenv
+- `virtualenv venv` - create a new venv environment
+- `source venv/bin/activate` - activate the newly created venv
+- `pip install -r requirements.txt` - install the dependencies
+
 ## Accessing MongoDB using Mongosh
 
 It is helpful during development to access the MongoDB data locally. To do this, make sure you have installed [Mongosh](https://www.mongodb.com/docs/mongodb-shell/install/).
@@ -64,6 +73,5 @@ This project comes with the following endpoints:
 - `/conversations` - CRUD endpoints to store different chat interactions to an LLM.
 - `/queries/{id}` - A POST endpoint that accepts user input prompt that is sent to an LLM and the LLM response is returned to the caller.
 This endpoint requires an `id`. To initiate a conversation, call the `/conversations` API to acquire a conversation id.
-
 
 For more information about the endpoints, refer to the `http://127.0.0.1:8000/redoc` for the generated OpenAPI documentation.

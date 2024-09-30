@@ -1,4 +1,6 @@
 from openai import OpenAI
+
+from errors import ApiBotException
 from models import QueryPrompt
 from typing import List
 import os

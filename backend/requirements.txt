@@ -4,3 +4,5 @@ pydantic
 beanie[motor]
 motor
 openai
+httpx
+pytest

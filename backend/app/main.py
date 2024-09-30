@@ -1,13 +1,12 @@
-from fastapi import FastAPI, HTTPException, status, Request
+from fastapi import FastAPI, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, Field, validator
 from typing import List
-from beanie import Document, Indexed, init_beanie
+from beanie import init_beanie
 
 from models import ConversationModel, ConversationListingModel, QueryPrompt, QueryRoleType, QueryResponse
 from errors import ApiBotException, handle_error, raise_not_found_error
@@ -40,7 +39,6 @@ async def startup_event():
     except Exception as exc:
         handle_error(exc)
 
-
 @app.post("/conversations/", status_code=status.HTTP_201_CREATED)
 async def create_conversations(conversation: ConversationModel):
     try:
@@ -54,7 +52,7 @@ async def create_conversations(conversation: ConversationModel):
 async def get_conversations():
     try:
         conversations = await ConversationModel.find_all().to_list()
-        filtered: List[ConversationShortModel] = [{"name": c.name, "id": str(c.id)} for c in conversations]
+        filtered = [{"name": c.name, "id": str(c.id)} for c in conversations]
         return filtered
     except Exception as exc:
         handle_error(exc)
@@ -108,7 +106,8 @@ async def queries(id: str, query_prompt: QueryPrompt):
 
         llm_params = conversation_result.llm_params
 
-        response = get_completion(query_prompt=query_prompt, context=conversation_result.messages, model=llm_params.model_name,
+        response = get_completion(query_prompt=query_prompt, context=conversation_result.messages,
+                                  model=llm_params.model_name,
                                   temperature=llm_params.temperature)
 
         conversation_result.messages.append(query_prompt)
@@ -139,6 +138,7 @@ async def general_exception_handler(request: Request, exc: ApiBotException):
         content={"code": exc.code, "message": exc.message},
     )
 
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -155,5 +155,6 @@ def custom_openapi():
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 app.openapi = custom_openapi
