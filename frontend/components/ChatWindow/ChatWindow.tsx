@@ -49,16 +49,6 @@ export default function ChatWindow() {
     return response.json();
 };
 
-  const sendMessage = (message: string) => {
-    const userMessage = { id: Date.now(), content: message, sender: 'user' };
-    setMessages((prev) => [...prev, userMessage]);
-
-    setTimeout(() => {
-      const botMessage = { id: Date.now(), content: `Bot response to "${message}"`, sender: 'bot' };
-      setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
-  };
-
   const mutation = useMutation({
       mutationFn: sendMessageToServer,
       onSuccess: (data, variables) => {
@@ -80,9 +70,13 @@ export default function ChatWindow() {
       <Container>
         <Box mb="md">
           {messages.map((msg) => (
-              <Text key={msg.id} align={msg.sender === 'user' ? 'right' : 'left'}>
-                {msg.sender}: {msg.content}
-              </Text>
+            <Box>
+              <Box bg={msg.sender === 'user' ? 'blue' : 'green'} m={16} p={16} style={{ '--radius': '0.5rem', borderRadius: 'var(--radius)', width: 'auto', display: 'inline-block'}} >
+                <Text key={msg.id} align={msg.sender === 'user' ? 'right' : 'left'} >
+                  {msg.sender}: {msg.content}
+                </Text>
+              </Box>
+            </Box>
           ))}
         </Box>
         <TextInput
