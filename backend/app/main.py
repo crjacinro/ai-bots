@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, validator
@@ -137,3 +138,22 @@ async def general_exception_handler(request: Request, exc: ApiBotException):
         status_code=exc.code,
         content={"code": exc.code, "message": exc.message},
     )
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Chatbots API",
+        version="1.0.0",
+        summary="This project is a FastAPI Python application that simulates chat interfaces to ChatGPT",
+        description="It uses Beanie as the Object-Document Mapper (ODM) to interact with MongoDB. "
+                    "It is containerized using Docker for easy setup and deployment.",
+        routes=app.routes,
+    )
+    openapi_schema["info"]["x-logo"] = {
+        "url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi

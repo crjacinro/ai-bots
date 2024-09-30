@@ -25,7 +25,7 @@ To run the server locally in Docker, provide a valid OpenAPI API key with enough
 
 Make sure Docker is running on your machine. To build and run the application with Docker, use the following command:
 
-`docker-compose up --build`
+`docker compose up --build`
 
 This command will:
 
@@ -65,4 +65,5 @@ This project comes with the following endpoints:
 - `/queries/{id}` - A POST endpoint that accepts user input prompt that is sent to an LLM and the LLM response is returned to the caller.
 This endpoint requires an `id`. To initiate a conversation, call the `/conversations` API to acquire a conversation id.
 
-For more information about the endpoints, refer to the `openapi.yaml` file provided in the repository.
+
+For more information about the endpoints, refer to the `http://127.0.0.1:8000/redoc` for the generated OpenAPI documentation.
